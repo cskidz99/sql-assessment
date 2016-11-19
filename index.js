@@ -3,7 +3,7 @@ var bodyParser = require('body-parser');
 var cors = require('cors');
 var massive = require('massive');
 //Need to enter username and password for your database
-var connString = "postgres://username:password@localhost/assessbox";
+var connString = "postgres://cskidz99:computer@localhost/assessbox";
 
 var app = express();
 
@@ -16,14 +16,74 @@ app.use(cors());
 var db = massive.connect({connectionString : connString},
   function(err, localdb){
     db = localdb;
-    // app.set('db', db);
-    //
-    // db.user_create_seed(function(){
-    //   console.log("User Table Init");
-    // });
-    // db.vehicle_create_seed(function(){
-    //   console.log("Vehicle Table Init")
-    // });
+    app.set('db', db);
+
+    db.user_create_seed(function(){
+      console.log("User Table Init");
+    });
+    db.vehicle_create_seed(function(err,vehicles){
+      console.log(err,"Vehicle Table Init")
+    });
+
+    app.get('/api/users', function(req,res,next){
+      db.all_users(function(err, users){
+        console.log(err, users);
+        res.send(users);
+      })
+    });
+    app.get('/api/vehicles', function(req,res,next){
+        db.all_vehicles(function(err, vehicles){
+          console.log(err, vehicles);
+          res.send(vehicles);
+        })
+    });
+    app.post('/api/users', function(req,res,next){
+      var user = req.body;
+      db.create_user([user.firstname,user.lastname,user.email],function(err, users){
+        console.log(err, users);
+        res.send(users);
+      })
+    });
+    app.post('/api/vehicles', function(req,res,next){
+      var vehicle = req.body;
+      db.create_vehicle([vehicle.make,vehicle.model,vehicle.year,Number(vehicle.ownerId)],function(err, vehicles){
+        console.log(err, vehicles);
+        res.send(vehicles);
+      })
+    });
+    app.get('/api/user/:userId/vehiclecount', function(req,res,next){
+      db.count_user_vehicles([Number(req.params.userId)],function(err, vehicles){
+        console.log(err, vehicles);
+        res.send({count:vehicles});
+      })
+    });
+    app.get('/api/user/:userId/vehicle', function(req,res,next){
+      db.get_user_vehicles([Number(req.params.userId)],function(err, vehicles){
+        console.log(err, vehicles);
+        res.send(vehicles);
+      })
+    });
+    app.get('/api/vehicle', function(req,res,next){
+      // if(req.query.UserEmail){
+        console.log(req.query.UserEmail);
+        db.get_email_vehicles([req.query.UserEmail],function(err,vehicles){
+          console.log(err, vehicles);
+          res.send(vehicles);
+        })
+      // } else if (req.query.userFirstStart){
+      //   console.log(req.query.userFirstStart);
+      //   db.get_firstLetter_vehicles(['%'+req.query.userFirstStart+'%'],function(err,vehicles){
+      //     console.log()
+      //     console.log(err,vehicles);
+      //     res.send(vehicles);
+      //   })
+      // } else {
+      //   res.send('Error');
+      // }
+    });
+
+
+
 })
 
 app.listen('3000', function(){
